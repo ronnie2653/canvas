@@ -12,8 +12,77 @@ object CanvasUtils {
   val horizontalSymbol = "-"
   val verticalSymbol = "|"
 
-  def parseInput(userInput: String): Request = {
-    null
+  def updateCanvas(c: Request, maybeCanvas: Option[Array[Array[String]]]): Option[Array[Array[String]]] = {
+    c match {
+      case Canvas(w, h) => createCanvas(w, h)
+
+      case Line(x1, y1, x2, y2) => addLine(maybeCanvas, x1, y1, x2, y2)
+
+      case Rectangle(x1, y1, x2, y2) => addRectangle(maybeCanvas, x1, y1, x2, y2)
+
+      case BucketFill(x, y, color) => doBucketFill(maybeCanvas, x, y, color)
+
+      case q: Quit => executeQuit(q)
+    }
+  }
+
+  private def executeQuit(q: Quit): Option[Array[Array[String]]] = {
+    q.exitFromProgram()
+    None
+  }
+
+  private def doBucketFill(maybeCanvas: Option[Array[Array[String]]], x: Int, y: Int, color: String): Option[Array[Array[String]]] = {
+    require(maybeCanvas.nonEmpty, "No canvas defined yet!")
+    val (h, w) = maybeCanvas.map(canvas => (canvas.length, canvas(0).length)).get
+    require(x < w && y < h, s"Bucket fill coordinate pointing outside of the canvas, give values lower or equal than $w and $h")
+    maybeCanvas.map { canvas =>
+      fillBucket(w, h)(canvas, x, y, color)
+    }
+  }
+
+  private def addRectangle(maybeCanvas: Option[Array[Array[String]]], x1: Int, y1: Int, x2: Int, y2: Int): Option[Array[Array[String]]] = {
+    require(maybeCanvas.nonEmpty, "No canvas defined yet!")
+    val (h, w) = maybeCanvas.map(canvas => (canvas.length, canvas(0).length)).get
+    require(x1 < w && x2 < w && y1 < h && y2 < h, s"Rectangle would be out of canvas, give values no hiegher $w and $h")
+    maybeCanvas.map { canvas =>
+      // horizontal line
+      for (i <- x1 to x2) {
+        canvas(y1)(i) = innerLineSymbol
+        canvas(y2)(i) = innerLineSymbol
+      }
+      // vertical line
+      for (j <- y1 to y2) {
+        canvas(j)(x1) = innerLineSymbol
+        canvas(j)(x2) = innerLineSymbol
+      }
+      canvas
+    }
+  }
+
+  private def createCanvas(w: Int, h: Int): Option[Array[Array[String]]] = {
+    // to get a w*h net area to drown on we need to increase width and height of the matrix
+    val increasedWidth = w + 2
+    val increasedHeight = h + 2
+    val newCanvas = new Array[Array[String]](increasedHeight)
+    for (i <- 0 until increasedHeight)
+      newCanvas.update(i, Array.fill(increasedWidth)(initalSymbol)) // initialize Array with whitespace
+    newCanvas.update(0, Array.fill(increasedWidth)(horizontalSymbol))
+    newCanvas.update(increasedHeight - 1, Array.fill(increasedWidth)(horizontalSymbol))
+    for (i <- 1 until increasedHeight - 1) {
+      newCanvas(i).update(0, verticalSymbol)
+      newCanvas(i).update(increasedWidth - 1, verticalSymbol)
+    }
+    Option(newCanvas)
+  }
+
+  def printCanvas(cm: Option[Array[Array[String]]]) = {
+    cm.foreach(canvas =>
+      canvas.foreach(row => {
+        row.foreach(print)
+        println()
+      }
+      )
+    )
   }
 
   private def addVerticalLine(i: Int): Array[String] = Array.fill(i)("+")
@@ -41,79 +110,23 @@ object CanvasUtils {
     canvas
   }
 
-  def updateCanvas(c: Request, maybeCanvas: Option[Array[Array[String]]]): Option[Array[Array[String]]] = {
-    c match {
-      case Canvas(h, w) =>
-        // to get a h*w net area to drown on we need to increase width and height of the matrix
-        val increasedWidth = w + 2
-        val increasedHeight = h + 2
-        val ll = new Array[Array[String]](increasedHeight)
-        for (i <- 0 until increasedHeight)
-          ll.update(i, Array.fill(increasedWidth)(initalSymbol)) // initialize Array with whitespace
-        ll.update(0, Array.fill(increasedWidth)(horizontalSymbol))
-        ll.update(increasedHeight - 1, Array.fill(increasedWidth)(horizontalSymbol))
-        for (i <- 1 until increasedHeight - 1) {
-          ll(i).update(0, verticalSymbol)
-          ll(i).update(increasedWidth - 1, verticalSymbol)
-        }
-        Option(ll)
-      case Line(x1, y1, x2, y2) =>
-        require(maybeCanvas.nonEmpty, "No canvas defined yet!")
-        val (h, w) = maybeCanvas.map(canvas => (canvas.length, canvas(0).length)).get
-        // TODO: refactor these to method.
-        require(x1 < w && x2 < w && y1 < h && y2 < h, s"Line would be out of canvas, give values no higher then $w and $h")
-        maybeCanvas.foreach { canvas =>
-          if (x1 == x2) {
-            // vertical line
-            for (j <- y1 to y2)
-              canvas(j).update(x1, innerLineSymbol)
-          } else if (y1 == y2) {
-            // horizontal line
-            for (i <- x1 to x2)
-              canvas(y1)(i) = innerLineSymbol
-          } else {
-            require(x1 == x2 || y1 == y2, "Please give values for vertical or horizontal line: x1==x2 or y1==y2")
-          }
-        }
-        maybeCanvas
-      case Rectangle(x1, y1, x2, y2) =>
-        require(maybeCanvas.nonEmpty, "No canvas defined yet!")
-        val (h, w) = maybeCanvas.map(canvas => (canvas.length, canvas(0).length)).get
-        require(x1 < w && x2 < w && y1 < h && y2 < h, s"Rectangle would be out of canvas, give values no hiegher $w and $h")
-        maybeCanvas.foreach { canvas =>
-          // horizontal line
-          for (i <- x1 to x2) {
-            canvas(y1)(i) = innerLineSymbol
-            canvas(y2)(i) = innerLineSymbol
-          }
-          // vertical line
-          for (j <- y1 to y2) {
-            canvas(j)(x1) = innerLineSymbol
-            canvas(j)(x2) = innerLineSymbol
-          }
-        }
-        maybeCanvas
-      case BucketFill(x, y, color) =>
-        require(maybeCanvas.nonEmpty, "No canvas defined yet!")
-        val (h, w) = maybeCanvas.map(canvas => (canvas.length, canvas(0).length)).get
-        require(x < w && y < h, s"Bucket fill coordinate pointing outside of the canvas, give values lower or equal than $w and $h")
-        maybeCanvas.foreach { canvas =>
-          fillBucket(w, h)(canvas, x, y, color)
-        }
-        maybeCanvas
-      case q: Quit =>
-        q.exitFromProgram()
-        None
-    }
-  }
-
-  def printCanvas(cm: Option[Array[Array[String]]]) = {
-    cm.foreach(canvas =>
-      canvas.foreach(row => {
-        row.foreach(print)
-        println()
+  private def addLine(maybeCanvas: Option[Array[Array[String]]], x1: Int, y1: Int, x2: Int, y2: Int): Option[Array[Array[String]]] = {
+    require(maybeCanvas.nonEmpty, "No canvas defined yet!")
+    val (h, w) = maybeCanvas.map(canvas => (canvas.length, canvas(0).length)).get
+    require(x1 < w && x2 < w && y1 < h && y2 < h, s"Line would be out of canvas, give values no higher then $w and $h")
+    maybeCanvas.map { canvas =>
+      if (x1 == x2) {
+        // vertical line
+        for (j <- y1 to y2)
+          canvas(j)(x1) = innerLineSymbol
+      } else if (y1 == y2) {
+        // horizontal line
+        for (i <- x1 to x2)
+          canvas(y1)(i) = innerLineSymbol
+      } else {
+        require(x1 == x2 || y1 == y2, "Please give values for vertical or horizontal line: x1==x2 or y1==y2")
       }
-      )
-    )
+      canvas
+    }
   }
 }
