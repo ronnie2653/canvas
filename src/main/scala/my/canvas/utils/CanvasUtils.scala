@@ -4,6 +4,8 @@ import my.canvas.types._
 
 /**
  * Created by Sandor Nagy on 1/23/16.
+ *
+ * This class methods contains the logic that handles user commands.
  */
 object CanvasUtils {
 
@@ -12,7 +14,16 @@ object CanvasUtils {
   val horizontalSymbol = "-"
   val verticalSymbol = "|"
 
-  def updateCanvas(c: Request, maybeCanvas: Option[Array[Array[String]]]): Option[Array[Array[String]]] = {
+  /**
+   * This method can handle different user commands:
+   *  - Input is the user command and the matrix that represents the actual canvas.
+   *  - Output is the updated matrix that represents the new canvas.
+   * 
+   * @param c the user command
+   * @param maybeCanvas the matrix that represents the actual canvas.
+   * @return returns the updated Canvas Matrix.
+   */
+  def updateCanvas(c: Command, maybeCanvas: Option[Array[Array[String]]]): Option[Array[Array[String]]] = {
     c match {
       case Canvas(w, h) => createCanvas(w, h)
 
@@ -24,6 +35,21 @@ object CanvasUtils {
 
       case q: Quit => executeQuit(q)
     }
+  }
+
+  /**
+   * This method prints out the canvas to the standard output (console) to be visible for the user.
+   *
+   * @param maybeCanvas the matrix representation of the canvas to print out
+   */
+  def printCanvas(maybeCanvas: Option[Array[Array[String]]]) = {
+    maybeCanvas.foreach(canvas =>
+      canvas.foreach(row => {
+        row.foreach(print)
+        println()
+      }
+      )
+    )
   }
 
   private def executeQuit(q: Quit): Option[Array[Array[String]]] = {
@@ -75,18 +101,10 @@ object CanvasUtils {
     Option(newCanvas)
   }
 
-  def printCanvas(cm: Option[Array[Array[String]]]) = {
-    cm.foreach(canvas =>
-      canvas.foreach(row => {
-        row.foreach(print)
-        println()
-      }
-      )
-    )
-  }
-
   private def addVerticalLine(i: Int): Array[String] = Array.fill(i)("+")
 
+  // Using recursion to fill out the available spaces
+  // No spaces left to fill out then we stop the recursion calls.
   private def fillBucket(w: Int, h: Int)(canvas: Array[Array[String]], x: Int, y: Int, c: String): Array[Array[String]] = {
     var canFill = true
     while (canFill) {
@@ -102,7 +120,7 @@ object CanvasUtils {
           fillBucket(w, h)(canvas, x, incY, c)
         if (isDecY)
           fillBucket(w, h)(canvas, x, decY, c)
-        canFill = isIncX || isDecX || isIncY || isDecY // if no updates possible return false and break out the loop
+        canFill = isIncX || isDecX || isIncY || isDecY // if no updates possible return false and break out from the loop
       } else {
         canFill = false
       }

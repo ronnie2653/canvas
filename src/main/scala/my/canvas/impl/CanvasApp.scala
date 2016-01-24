@@ -1,12 +1,12 @@
 package my.canvas.impl
 
 /**
-*  Created by Sandor Nagy on 1/23/16.
-*/
+ * Created by Sandor Nagy on 1/23/16.
+ */
 
 import my.canvas.types._
+import my.canvas.utils.CanvasUtils
 import my.canvas.utils.UserInputs._
-import my.canvas.utils.{CanvasUtils, UserInputs}
 
 import scala.io.StdIn
 
@@ -31,7 +31,7 @@ object CanvasApp extends App {
   var quitProgramme = false
   var maybeUserCanvas: Option[Array[Array[String]]] = None
 
-  def parseUserInput(userInput: String): Request = {
+  def parseUserInput(userInput: String): Command = {
     val input = userInput.split(" ")
     input(0) match {
       case C => Canvas(input(1), input(2))
@@ -46,7 +46,7 @@ object CanvasApp extends App {
     print(s"enter code: ")
     val userInput = StdIn.readLine()
     try {
-      val c: Request = parseUserInput(userInput)
+      val c: Command = parseUserInput(userInput)
       maybeUserCanvas = CanvasUtils.updateCanvas(c, maybeUserCanvas)
       CanvasUtils.printCanvas(maybeUserCanvas)
     } catch {
