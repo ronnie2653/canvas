@@ -85,7 +85,7 @@ object CanvasUtils {
     }
   }
 
-  private def createCanvas(w: Int, h: Int): Option[Array[Array[String]]] = {
+  private[utils] def createCanvas(w: Int, h: Int): Option[Array[Array[String]]] = {
     // to get a w*h net area to drown on we need to increase width and height of the matrix
     val increasedWidth = w + 2
     val increasedHeight = h + 2
